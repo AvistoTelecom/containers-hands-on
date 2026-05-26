@@ -1,0 +1,7 @@
+FROM alpine
+
+RUN sleep 10 && echo "Heavy setup done"
+
+COPY src/hello.sh /hello.sh
+
+ENTRYPOINT ["sh", "/hello.sh"]
