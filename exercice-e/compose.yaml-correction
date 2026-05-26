@@ -1,0 +1,50 @@
+services:
+  vote:
+    image: dockersamples/examplevotingapp_vote
+    ports:
+      - "8080:80"
+    depends_on:
+      - redis
+    networks:
+      - front-tier
+      - back-tier
+
+  redis:
+    image: redis:alpine
+    networks:
+      - back-tier
+
+  db:
+    image: postgres:15-alpine
+    environment:
+      POSTGRES_USER: "postgres"
+      POSTGRES_PASSWORD: "postgres"
+    volumes:
+      - db-data:/var/lib/postgresql/data
+    networks:
+      - back-tier
+
+  worker:
+    image: dockersamples/examplevotingapp_worker
+    depends_on:
+      - redis
+      - db
+    networks:
+      - back-tier
+
+  result:
+    image: dockersamples/examplevotingapp_result
+    ports:
+      - "8081:80"
+    depends_on:
+      - db
+    networks:
+      - front-tier
+      - back-tier
+
+volumes:
+  db-data:
+
+networks:
+  front-tier:
+  back-tier:
