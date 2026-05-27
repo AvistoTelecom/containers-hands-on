@@ -78,8 +78,6 @@ Use it in your `FROM` instruction alongside the tag, so the file stays human-rea
 FROM debian:12-slim@sha256:3d868b5eb908155f3784317b3dda2941df87bbbbaa4608f84881de66d9bb297 AS builder
 ```
 
-Update both `FROM` lines in your `Containerfile` with the digest you just retrieved.
-
 ### 2. Write your Containerfile
 
 Create a `Containerfile` in this directory. Your file must use **two named stages**: one for building, one for running.
