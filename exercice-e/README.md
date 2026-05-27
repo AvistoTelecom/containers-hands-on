@@ -161,7 +161,7 @@ depends_on:
     condition: service_healthy
 ```
 
-Apply this to `vote` (depends on `redis`), `worker` (depends on `redis` and `db`), and `result` (depends on `db`).
+Apply this to `vote` (depends on `redis`), `worker` (depends on `redis` and `db`), and later on `result` (depends on `db`).
 
 Restart the stack and watch the logs: services now wait for their dependencies to pass the health check before starting.
 
