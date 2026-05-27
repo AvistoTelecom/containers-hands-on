@@ -6,12 +6,12 @@ services:
     depends_on:
       - redis
     networks:
-      - front-tier
-      - back-tier
+      - vote-tier
 
   redis:
     image: redis:alpine
     networks:
+      - vote-tier
       - back-tier
 
   db:
@@ -23,6 +23,7 @@ services:
       - db-data:/var/lib/postgresql/data
     networks:
       - back-tier
+      - result-tier
 
   worker:
     image: dockersamples/examplevotingapp_worker
@@ -39,12 +40,12 @@ services:
     depends_on:
       - db
     networks:
-      - front-tier
-      - back-tier
+      - result-tier
 
 volumes:
   db-data:
 
 networks:
-  front-tier:
+  vote-tier:
   back-tier:
+  result-tier:

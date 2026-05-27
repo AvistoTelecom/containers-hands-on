@@ -22,10 +22,13 @@ No builds in this exercise — all images are pulled from Docker Hub.
 
 ### Networks
 
-| Network | Connected services |
-|---|---|
-| `front-tier` | `vote`, `result` |
-| `back-tier` | `vote`, `redis`, `worker`, `db`, `result` |
+| Network | Connected services | Purpose |
+|---|---|---|
+| `vote-tier` | `vote`, `redis` | Vote app → Redis message queue |
+| `back-tier` | `redis`, `worker`, `db` | Worker bridges Redis and PostgreSQL |
+| `result-tier` | `db`, `result` | Result app reads PostgreSQL |
+
+Each service is on only the network(s) it actually needs: `vote` cannot reach `db`, `result` cannot reach `redis`, and `redis` cannot talk directly to `db`.
 
 ---
 
@@ -40,6 +43,12 @@ exercice-e/
 ├── compose.yaml              ← you will create this
 └── compose.yaml-correction   ← reference solution
 ```
+
+---
+
+## Reference
+
+- [Compose file reference](https://docs.docker.com/reference/compose-file/)
 
 ---
 
@@ -63,12 +72,12 @@ Create a `compose.yaml` with two services: `redis` and `vote`.
 
 **`redis`**
 - Image: `redis:alpine`
-- Network: `back-tier`
+- Networks: `vote-tier` and `back-tier`
 
 **`vote`**
 - Image: `dockersamples/examplevotingapp_vote`
 - Port: `8080:80`
-- Networks: `front-tier` and `back-tier`
+- Network: `vote-tier`
 - Depends on: `redis`
 
 > The vote app resolves Redis by the service name. Name the Redis service exactly `redis`.
@@ -92,7 +101,7 @@ Add two more services to your `compose.yaml`: `db` and `worker`.
 
 **`db`**
 - Image: `postgres:15-alpine`
-- Network: `back-tier`
+- Networks: `back-tier` and `result-tier`
 - Volume: persist `/var/lib/postgresql/data` using a named volume `db-data`
 - The PostgreSQL image requires two environment variables to initialise — look at what is missing in the logs
 
@@ -125,7 +134,7 @@ Add the final service: `result`.
 **`result`**
 - Image: `dockersamples/examplevotingapp_result`
 - Port: `8081:80`
-- Networks: `front-tier` and `back-tier`
+- Network: `result-tier`
 - Depends on: `db`
 
 Restart the stack and open http://localhost:8081. You should see the live vote results update as you vote at http://localhost:8080.
@@ -159,4 +168,24 @@ Open http://localhost:8081 and confirm your previous votes are still there.
 
 ---
 
-> **Key takeaway**: Compose turns a multi-container architecture into a single declarative file. Service names become DNS hostnames on shared networks, `depends_on` controls startup order, and named volumes outlive the containers that use them.
+## Cleanup
+
+`docker compose down` removes containers and networks but leaves the named volume intact. Pass `-v` to also delete it.
+
+```bash
+docker compose down -v
+```
+
+To also remove the pulled images:
+
+```bash
+docker rmi dockersamples/examplevotingapp_vote \
+           dockersamples/examplevotingapp_result \
+           dockersamples/examplevotingapp_worker \
+           postgres:15-alpine \
+           redis:alpine
+```
+
+---
+
+> **Key takeaway**: Compose turns a multi-container architecture into a single declarative file. Service names become DNS hostnames on shared networks, `depends_on` controls startup order, and named volumes outlive the containers that use them. Multiple networks enforce the principle of least privilege: each service can only reach the services it genuinely needs.
