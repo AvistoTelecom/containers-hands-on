@@ -12,6 +12,13 @@ A set of practical exercises to get familiar with Docker. Each exercise builds o
 | [D](exercice-d/README.md) | Named volumes, data persistence, user-defined networks, DNS resolution, port forwarding |
 | [E](exercice-e/README.md) | Docker Compose, multi-service stacks, service dependencies, environment variables, network segmentation |
 
+## Getting started
+
+```bash
+git clone https://github.com/AvistoTelecom/containers-hands-on.git
+cd containers-hands-on
+```
+
 ## Prerequisites
 
 - Docker installed and running — verify with `docker run hello-world`
