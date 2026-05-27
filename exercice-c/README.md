@@ -129,6 +129,46 @@ Rebuild and compare the image size against the version where both commands are i
 
 The cache files are committed to the first layer before the second `RUN` has a chance to delete them — they remain in the image even though they are not visible at runtime.
 
+### 6. Export the image to a tar archive
+
+`docker save` serialises an image — including all its layers, metadata, and tags — into a single `.tar` file. This is useful for transferring images to machines with no registry access, archiving a specific version, or inspecting the raw layer contents.
+
+```bash
+docker save my-app:final -o my-app-final.tar
+```
+
+Inspect what is inside the archive:
+
+```bash
+tar -tf my-app-final.tar
+```
+
+You will see one directory per layer (each containing a `layer.tar` with the actual filesystem diff), a `manifest.json` describing the image, and a JSON config file holding the image metadata (env, entrypoint, layer chain).
+
+To load the image back on any Docker host:
+
+```bash
+docker load -i my-app-final.tar
+```
+
+Remove the archive once you are done:
+
+```bash
+rm my-app-final.tar
+```
+
+> `docker save` / `docker load` operate on images. To export the **filesystem of a running container** instead, use `docker export` / `docker import` — but that discards layer history and metadata.
+
+---
+
+## Cleanup
+
+Remove the images built during the exercise.
+
+```bash
+docker rmi my-app:final my-app:builder
+```
+
 ---
 
 > **Key takeaway**: multi-stage builds keep build tools out of production images, and a non-root user limits what an attacker can do if the process is ever exploited. Both cost almost nothing to set up.
