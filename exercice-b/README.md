@@ -48,9 +48,36 @@ Since `hello.sh` lives in `src/`, the Containerfile references it as `src/hello.
 COPY src/hello.sh /hello.sh
 ```
 
-If you move or rename the file, the path in `COPY` must be updated accordingly.
+If you move, rename the file, or wish to change the context, the path in `COPY` must be updated accordingly.
 
-### 3. Exclude files with .dockerignore
+### 3. Experiment with context size
+
+The context is transferred in full before the build starts — even files that no `COPY` instruction ever uses. This is the behavior of the classic builder. BuildKit (the default since Docker 23) optimises this by only transferring files referenced in `COPY` instructions, so unreferenced files are silently skipped.
+
+To observe the classic behavior, disable BuildKit explicitly:
+
+**Too big** — create a large dummy file and rebuild with the classic builder:
+
+```bash
+dd if=/dev/zero of=bigfile.bin bs=1M count=50
+DOCKER_BUILDKIT=0 docker build -f Containerfile -t my-app:v1 .
+```
+
+Watch the first line of the build output: `Sending build context to Docker daemon  52.43MB`. The daemon received 50 MB it will never use. Delete the file once you have seen the effect.
+
+```bash
+rm bigfile.bin
+```
+
+**Too narrow** — try passing `src/` as the context root instead of `.`:
+
+```bash
+docker build -f Containerfile -t my-app:test src/
+```
+
+Docker fails: `COPY src/hello.sh /hello.sh` looks for `src/hello.sh` relative to the context root, which is now `src/` — there is no `src/` subdirectory inside it. Narrowing the context root shifts all paths, breaking any `COPY` that expected the original layout.
+
+### 4. Exclude files with .dockerignore
 
 The `.dockerignore` file works exactly like `.gitignore`: files and directories matching its patterns are excluded from the build context. They are never sent to the daemon and cannot be referenced in `COPY` instructions.
 
@@ -68,7 +95,7 @@ COPY secret.txt /secret.txt
 
 Docker will fail with an error — `secret.txt` is not part of the context. Remove that line before continuing.
 
-### 4. Rebuild without any change
+### 5. Rebuild without any change
 
 Run the exact same build command again.
 
@@ -78,7 +105,7 @@ docker build -f Containerfile -t my-app:v1 .
 
 The build is now **instant**. Docker reused all cached layers — nothing changed, so nothing was rebuilt.
 
-### 5. Modify the script and rebuild
+### 6. Modify the script and rebuild
 
 Edit `src/hello.sh` — change the message to anything you like, then build a new version.
 
@@ -88,7 +115,7 @@ docker build -f Containerfile -t my-app:v2 .
 
 The build is fast again: Docker detects that only the `COPY` layer changed and reuses the cached `RUN` layer. The slow 10-second step is skipped.
 
-### 6. Compare layer SHAs between the two versions
+### 7. Compare layer SHAs between the two versions
 
 Each layer is identified by a SHA256 hash of its content. Inspect the layer stack of both images and compare them.
 
@@ -99,7 +126,7 @@ docker inspect --format='{{json .RootFS.Layers}}' my-app:v2 | tr ',' '\n'
 
 You should see that the first layers (`FROM` and `RUN`) share the **same SHA** — they were not rebuilt. Only the last layer (`COPY`) has a **different SHA**, because `src/hello.sh` changed.
 
-### 7. Understand cache invalidation
+### 8. Understand cache invalidation
 
 Now move the `COPY` instruction **above** the `RUN` in the `Containerfile` so it looks like this:
 
@@ -130,6 +157,16 @@ Add `--no-trunc` to see the full commands, useful to compare directly with your 
 
 ```bash
 docker history --no-trunc my-app:v1
+```
+
+---
+
+## Cleanup
+
+Remove both image versions built during the exercise.
+
+```bash
+docker rmi my-app:v1 my-app:v2
 ```
 
 ---
