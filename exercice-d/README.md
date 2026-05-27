@@ -115,4 +115,76 @@ docker network rm mynet
 
 ---
 
-> **Key takeaway**: named volumes outlive containers — data lives in the volume, not in the container layer. User-defined bridge networks give containers automatic DNS resolution by name; the default bridge network does not.
+## Part 3 — Port forwarding
+
+By default, a container's ports are not reachable from the host. This section shows how to expose them.
+
+### 10. Start nginx and reach it from inside the container
+
+Start an nginx container without any port mapping.
+
+```bash
+docker run -d --name webserver nginx
+```
+
+A container can always reach its own services. Use `docker exec` to run `curl` inside the container itself:
+
+```bash
+docker exec webserver curl -s http://localhost
+```
+
+You should see the nginx welcome page HTML. The service is running, but it is only visible from inside the container.
+
+### 11. Try reaching it from the host
+
+Now try the same request from the host machine:
+
+```bash
+curl -s http://localhost
+```
+
+The connection is refused — nginx is listening inside the container's network namespace, which the host cannot access without an explicit mapping.
+
+```bash
+docker rm -f webserver
+```
+
+### 12. Expose the port with `-p`
+
+Start a new nginx container, this time mapping port `8080` on the host to port `80` inside the container.
+
+```bash
+docker run -d --name webserver -p 8080:80 nginx
+```
+
+The format is `host_port:container_port`. Docker configures a `iptables` rule to forward traffic arriving on the host's port `8080` into the container.
+
+Run `curl` from the host:
+
+```bash
+curl -s http://localhost:8080
+```
+
+The nginx welcome page is now reachable from outside the container.
+
+### 13. Clean up
+
+```bash
+docker rm -f webserver
+```
+
+---
+
+## Cleanup
+
+Remove any remaining containers, the volume, and the user-defined network. Steps 9 and 13 already handle teardown during the exercise — run this section to ensure everything is gone.
+
+```bash
+docker rm -f server webserver
+docker volume rm mydata
+docker network rm mynet
+```
+
+---
+
+> **Key takeaway**: named volumes outlive containers — data lives in the volume, not in the container layer. User-defined bridge networks give containers automatic DNS resolution by name; the default bridge network does not. A container's ports are isolated by default — use `-p host:container` to forward traffic from the host into the container.
