@@ -80,6 +80,17 @@ From the host, both `sleep` processes are visible — the kernel runs them all, 
 
 ---
 
+## Cleanup
+
+Stop and remove the two containers, then remove the image.
+
+```bash
+docker rm -f container1 container2
+docker rmi my-image
+```
+
+---
+
 ## Troubleshooting
 
 If Docker does not seem to work at all, run the smoke-test image to verify your installation is functional.
