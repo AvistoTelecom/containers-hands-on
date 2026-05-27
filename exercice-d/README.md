@@ -175,6 +175,75 @@ docker rm -f webserver
 
 ---
 
+## Part 4 — Debugging
+
+### 14. Inspect logs
+
+Start nginx again and inspect its output.
+
+```bash
+docker run -d --name webserver -p 8080:80 nginx
+docker logs webserver
+```
+
+Make a request to generate a log entry, then follow the logs in real time:
+
+```bash
+curl -s http://localhost:8080 > /dev/null
+docker logs -f webserver
+```
+
+Press `Ctrl+C` to stop following. Containers that write to stdout/stderr are the ones you can observe this way.
+
+### 15. Enter a running container
+
+Open a shell inside the running container and explore its filesystem.
+
+```bash
+docker exec -it webserver sh
+```
+
+From inside the container, run a few commands:
+
+```sh
+cat /etc/os-release
+ls /usr/share/nginx/html
+exit
+```
+
+You are inside the container's filesystem and process namespace. Changes made here are lost when the container is removed.
+
+### 16. Inspect container metadata
+
+`docker inspect` dumps everything Docker knows about a container as JSON.
+
+```bash
+docker inspect webserver
+```
+
+Extract specific fields using `--format`:
+
+```bash
+docker inspect --format='{{.NetworkSettings.IPAddress}}' webserver
+docker inspect --format='{{.State.Status}}' webserver
+```
+
+### 17. Monitor resource usage
+
+```bash
+docker stats --no-stream
+```
+
+This prints a one-shot snapshot of CPU, memory, and network I/O for all running containers. Omit `--no-stream` for a live updating view.
+
+### 18. Clean up
+
+```bash
+docker rm -f webserver
+```
+
+---
+
 ## Cleanup
 
 Remove any remaining containers, the volume, and the user-defined network. Steps 9 and 13 already handle teardown during the exercise — run this section to ensure everything is gone.
@@ -187,4 +256,4 @@ docker network rm mynet
 
 ---
 
-> **Key takeaway**: named volumes outlive containers — data lives in the volume, not in the container layer. User-defined bridge networks give containers automatic DNS resolution by name; the default bridge network does not. A container's ports are isolated by default — use `-p host:container` to forward traffic from the host into the container.
+> **Key takeaway**: named volumes outlive containers — data lives in the volume, not in the container layer. User-defined bridge networks give containers automatic DNS resolution by name; the default bridge network does not. A container's ports are isolated by default — use `-p host:container` to forward traffic from the host into the container. Use `docker logs`, `docker exec`, `docker inspect`, and `docker stats` to observe and debug running containers.
