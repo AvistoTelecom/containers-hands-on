@@ -8,9 +8,9 @@ A set of practical exercises to get familiar with Docker. Each exercise builds o
 |---|---|
 | [A](exercice-a/README.md) | Build an image, list images, run multiple containers, process isolation |
 | [B](exercice-b/README.md) | Containerfile instructions, build context, `.dockerignore`, layer caching, layer inspection |
-| [C](exercice-c/README.md) | Multi-stage builds, base image selection, non-root user, image digest pinning |
-| [D](exercice-d/README.md) | Named volumes, data persistence, user-defined networks, DNS resolution |
-| [E](exercice-e/README.md) | Docker Compose, multi-service stacks, service dependencies, environment variables |
+| [C](exercice-c/README.md) | Multi-stage builds, base image selection, non-root user, image digest pinning, image export (`docker save`) |
+| [D](exercice-d/README.md) | Named volumes, data persistence, user-defined networks, DNS resolution, port forwarding |
+| [E](exercice-e/README.md) | Docker Compose, multi-service stacks, service dependencies, environment variables, network segmentation |
 
 ## Prerequisites
 
