@@ -4,12 +4,18 @@ services:
     ports:
       - "8080:80"
     depends_on:
-      - redis
+      redis:
+        condition: service_healthy
     networks:
       - vote-tier
 
   redis:
     image: redis:alpine
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
     networks:
       - vote-tier
       - back-tier
@@ -21,6 +27,11 @@ services:
       POSTGRES_PASSWORD: "postgres"
     volumes:
       - db-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
     networks:
       - back-tier
       - result-tier
@@ -28,8 +39,10 @@ services:
   worker:
     image: dockersamples/examplevotingapp_worker
     depends_on:
-      - redis
-      - db
+      redis:
+        condition: service_healthy
+      db:
+        condition: service_healthy
     networks:
       - back-tier
 
@@ -38,7 +51,8 @@ services:
     ports:
       - "8081:80"
     depends_on:
-      - db
+      db:
+        condition: service_healthy
     networks:
       - result-tier
 

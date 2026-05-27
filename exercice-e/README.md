@@ -127,6 +127,51 @@ Once the worker connects successfully, cast a few votes and confirm they are bei
 
 ---
 
+### Step 2b — Add health checks and readiness conditions
+
+`depends_on` controls **startup order** but not readiness: the worker may start before Redis or PostgreSQL are actually ready to accept connections, causing transient errors. Fix this by adding a `healthcheck` to each infrastructure service and upgrading `depends_on` to wait for `service_healthy`.
+
+Add a health check to **`redis`**:
+
+```yaml
+healthcheck:
+  test: ["CMD", "redis-cli", "ping"]
+  interval: 5s
+  timeout: 3s
+  retries: 5
+```
+
+Add a health check to **`db`**:
+
+```yaml
+healthcheck:
+  test: ["CMD-SHELL", "pg_isready -U postgres"]
+  interval: 5s
+  timeout: 3s
+  retries: 5
+```
+
+Update every `depends_on` that references `redis` or `db` to use the long-form syntax:
+
+```yaml
+depends_on:
+  redis:
+    condition: service_healthy
+  db:
+    condition: service_healthy
+```
+
+Apply this to `vote` (depends on `redis`), `worker` (depends on `redis` and `db`), and `result` (depends on `db`).
+
+Restart the stack and watch the logs: services now wait for their dependencies to pass the health check before starting.
+
+```bash
+docker compose up -d
+docker compose ps   # HEALTH column shows starting → healthy
+```
+
+---
+
 ### Step 3 — Result app
 
 Add the final service: `result`.
@@ -135,7 +180,7 @@ Add the final service: `result`.
 - Image: `dockersamples/examplevotingapp_result`
 - Port: `8081:80`
 - Network: `result-tier`
-- Depends on: `db`
+- Depends on: `db` with `condition: service_healthy`
 
 Restart the stack and open http://localhost:8081. You should see the live vote results update as you vote at http://localhost:8080.
 
